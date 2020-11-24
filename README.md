@@ -1,12 +1,12 @@
 # README #
 
-This an application for WPF Signature Testing.
+This an application for decrypting MSR TRACK Data.
 
 ### What is this repository for? ###
 
-* SIGNATURE_PROCESSOR WPF APPLICATION
+* MSR TRACK DATA DECRYPTOR
 * 1.00.0.(100)
-* git remote add origin https://github.com/web-projects/SIGNATURE_PROCESSOR.git
+* git remote add origin https://github.com/web-projects/MSR_TRACK_DECRYPTOR.git
 
 ### How do I get set up? ###
 
@@ -30,7 +30,4 @@ This an application for WPF Signature Testing.
    
 ### HISTORY ###
 
-* 20201118 - Initial repository
-* 20201118 - Added dynamic signature file loading
-* 20201119 - Added device implementation
-* 20201120 - Automated signature collection
+* 20201123 - Initial repository
