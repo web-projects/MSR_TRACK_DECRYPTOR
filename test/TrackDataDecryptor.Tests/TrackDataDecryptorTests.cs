@@ -1,4 +1,5 @@
 ﻿using DecryptTrack1Data.Decryptor;
+using DecryptTrack1Data.Helpers;
 using TestHelper;
 using Xunit;
 
@@ -24,6 +25,20 @@ namespace DecryptTrack1Data.Tests
 
 
             Assert.Equal(expectedValue, actualValue);
+        }
+
+        [Theory]
+        [InlineData("7846D845D274861F32343138303030313233343536335E4644435320544553542043415244202F4D4153544552434152445E32353132313031303030313131313132333435363738393031323F438000", "")]
+        public void RetrieveTrackData_ShouldProcessTrackData_WhenCalled(string decryptedTrack, string discretionaryData)
+        {
+            byte[] trackInformation = Helper.HexToByteArray(decryptedTrack);
+
+            TrackData trackData = subject.RetrieveTrackData(trackInformation);
+
+            Assert.NotNull(trackData.PANData);
+            Assert.NotNull(trackData.Name);
+            Assert.NotNull(trackData.ExpirationDate);
+            Assert.Equal(discretionaryData, trackData.DiscretionaryData);
         }
     }
 }

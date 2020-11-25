@@ -1,11 +1,15 @@
 ﻿using DecryptTrack1Data.Decryptor;
 using DecryptTrack1Data.Helpers;
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace DecryptTrack1Data
 {
     /// <summary>
+    /// 
+    /// Program to validate MSR Track decryptor for a given swipe transaction
     ///
     /// BDK: 0123456789ABCDEFFEDCBA9876543210
     /// KEY LEN: 32 BYTES
@@ -25,26 +29,44 @@ namespace DecryptTrack1Data
     /// </summary>
     class Program
     {
-        // TEST: FFFF9876543211000620
-        public static readonly byte[] KSN = new byte[] { 0xff, 0xff, 0x98, 0x76, 0x54, 0x32, 0x11, 0x00, 0x06, 0x20 };
-        // TEST: FFFF9876543210E00008
-        //public static readonly byte[] KSN = new byte[] { 0xff, 0xff, 0x98, 0x76, 0x54, 0x32, 0x10, 0xE0, 0x00, 0x08 };
-
-        // ENCRYPTED TRACK DATA
-        public static readonly string DATA = "87A73106F57B8FBDD383A257ED8C713A62BFAE83E9B0D202C50FE1F7DA8739338C768BA61506C1D3404191C7C8C3016929A0CCE6621B95191D5A006382605FB0C17963725B548ABC37FFDA146E0429E7";
+        // Actual Transactions
+        public static List<TrackPayload> trackPayload = new List<TrackPayload>()
+        {
+            // TEST: FFFF9876543211000620
+            new TrackPayload()
+            {
+                KSN = "FFFF9876543211000620",
+                EncryptedData = "87A73106F57B8FBDD383A257ED8C713A62BFAE83E9B0D202C50FE1F7DA8739338C768BA61506C1D3404191C7C8C3016929A0CCE6621B95191D5A006382605FB0C17963725B548ABC37FFDA146E0429E7",
+                DecryptedData = "7846D845D274861F32343138303030313233343536335E4644435320544553542043415244202F4D4153544552434152445E32353132313031303030313131313132333435363738393031323F438000"
+            }
+        };
 
         static void Main(string[] args)
         {
             try
             {
-                TrackDataDecryptor decryptor = new TrackDataDecryptor();
-                byte[] trackData = decryptor.DecryptData(KSN, DATA);
-                string convertedTrack = ConversionHelper.ByteArrayToHexString(trackData);
+                foreach (var item in trackPayload)
+                {
+                    TrackDataDecryptor decryptor = new TrackDataDecryptor();
 
-                //1234567890|1234567890|12345
-                Debug.WriteLine($"OUTPUT ____: {convertedTrack}");
+                    byte[] KSN = ConversionHelper.HexToByteArray(item.KSN);
 
-                Console.WriteLine($"OUTPUT: [{convertedTrack}]");
+                    // decryptor in action
+                    byte[] trackInformation = decryptor.DecryptData(KSN, item.EncryptedData);
+                    
+                    string decryptedTrack = ConversionHelper.ByteArrayToHexString(trackInformation);
+
+                    //1234567890|1234567890|12345
+                    Debug.WriteLine($"OUTPUT ____: {decryptedTrack}");
+                    Console.WriteLine($"OUTPUT : [{decryptedTrack}]");
+
+                    byte[] expectedValue = ConversionHelper.HexToByteArray(item.DecryptedData);
+                    bool result = StructuralComparisons.StructuralEqualityComparer.Equals(expectedValue, trackInformation);
+                    Console.WriteLine($"EQUAL  : [{result}]");
+
+                    TrackData trackData = decryptor.RetrieveTrackData(trackInformation);
+                    Console.WriteLine($"CHOLDER: [{trackData.Name}]");
+                }
             }
             catch (Exception e)
             {

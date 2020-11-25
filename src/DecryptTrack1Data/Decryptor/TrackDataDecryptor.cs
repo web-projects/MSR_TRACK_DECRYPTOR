@@ -3,22 +3,24 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Security.Cryptography;
+using System.Text.RegularExpressions;
 
 namespace DecryptTrack1Data.Decryptor
 {
     /// <summary>
-    /// BDK        : 0123456789ABCDEFFEDCBA9876543210
-    /// KSN        : FFFF9876543211000620
-    /// DERIVED KEY: AC2B83C506DEC9D5E27D51E1D70559E7
+    /// MSR Track Decryptor to allow extraction on the following:
+    /// PAN, NAME, ADDITIONAL DATA (EXPIRATION DATE, SERVICE CODE), DISCRETIONARY DATA (PVKI, PVV, CVV, CVC)
     /// </summary>
     public class TrackDataDecryptor : ITrackDataDecryptor
     {
         const int RegisterSize = 16;
 
+        // BASE-DERIVATION KEY
         const string BDK = "0123456789ABCDEFFEDCBA9876543210";
         readonly string BDK24;
         readonly byte[] BDKMASK;
 
+        // Masking elements
         readonly byte[] KSNZERO = new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xE0, 0x00, 0x00 };
         readonly byte[] RGMASK = new byte[] { 0xC0, 0xC0, 0xC0, 0xC0, 0x00, 0x00, 0x00, 0x00, 0xC0, 0xC0, 0xC0, 0xC0, 0x00, 0x00, 0x00, 0x00 };
         readonly byte[] DDMASK = new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x00, 0x00 };
@@ -36,7 +38,7 @@ namespace DecryptTrack1Data.Decryptor
         }
 
         /// <summary>
-        /// TripleDES encrypt FFFF9876543210E0 with the 24 byte "0123456789ABCDEFFEDCBA98765432100123456789ABCDEF" BDK.
+        /// TripleDES encrypt KSN with the 24 byte "0123456789ABCDEFFEDCBA98765432100123456789ABCDEF" BDK.
         /// The result of this encryption should generate the left register of the IPEK.
         /// </summary>
         /// <param name="ksn"></param>
@@ -63,12 +65,9 @@ namespace DecryptTrack1Data.Decryptor
         /// To setup the right register mask:
         /// BDK xor C0C0C0C000000000C0C0C0C000000000
         ///	0123456789ABCDEFFEDCBA9876543210 xor C0C0C0C000000000C0C0C0C000000000
-        ///	= C1E385A789ABCDEF3E1C7A5876543210
-        ///	8-MSB: C1E385A789ABCDEF
         ///
         ///	Process right register by appending the most significant 8 bytes (8-MSB) to the resulting 24 byte key
-        ///	C1E385A789ABCDEF3E1C7A5876543210 + C1E385A789ABCDEF
-        ///	= C1E385A789ABCDEF3E1C7A5876543210C1E385A789ABCDEF
+        ///	
         /// </summary>
         /// <returns></returns>
         byte[] SetRightRegisterMask()
@@ -142,25 +141,6 @@ namespace DecryptTrack1Data.Decryptor
             }
         }
 
-        byte[] EncryptRegister(byte[] ksnZeroCounter, byte[] maskedKSN)
-        {
-            using (var tdes = new TripleDESCryptoServiceProvider())
-            {
-                tdes.Mode = CipherMode.ECB;
-                tdes.Padding = PaddingMode.PKCS7;
-                tdes.Key = maskedKSN;
-
-                using (var transform = tdes.CreateEncryptor())
-                {
-                    byte[] regBytes = transform.TransformFinalBlock(ksnZeroCounter, 0, ksnZeroCounter.Length);
-                    // Left Register is first 8 bytes
-                    byte[] register = new byte[8];
-                    Array.Copy(regBytes, register, 8);
-                    return register;
-                }
-            }
-        }
-
         byte[] GenerateRightRegister(byte[] ksnZeroCounter)
         {
             using (var tdes = new TripleDESCryptoServiceProvider())
@@ -224,30 +204,6 @@ namespace DecryptTrack1Data.Decryptor
             return registerKey;
         }
 
-        byte[] SetSessionRegisterMask(byte[] ksn, byte[] dataKey)
-        {
-            byte[] baseKSN = new byte[8];
-            Array.Copy(ksn, 2, baseKSN, 0, 8);
-
-            byte[] bKSN = new byte[10] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-
-            int i = 0;
-            foreach (byte value in baseKSN)
-            {
-                bKSN[i + 2] = (byte)(KSNZERO[i] & value);
-                i++;
-            }
-
-            //1234567890|1234567890|12345
-            Debug.WriteLine($"BASE KSN __: {ConversionHelper.ByteArrayToHexString(bKSN)}");
-
-            // Append 8-MSB from the resulting masked array
-            byte[] ssRegister = new byte[DDMASK.Length + 8];
-            Array.Copy(bKSN, ssRegister, bKSN.Length);
-
-            return ssRegister;
-        }
-
         byte[] GenerateDataRegister(byte[] key, byte[] ksn)
         {
             // break down key in two parts
@@ -305,36 +261,6 @@ namespace DecryptTrack1Data.Decryptor
             return expandedKey;
         }
 
-        byte[] FinalPermutationOnSessionKey(byte[] lReg, byte[] rReg)
-        {
-            byte[] rgkey = new byte[DDMASK.Length];
-            int i = 0;
-
-            // lReg ^ DDMASK
-            foreach (byte value in lReg)
-            {
-                rgkey[i] = (byte)(DDMASK[i] ^ value);
-                i++;
-            }
-
-            // rReg ^ DDMASK
-            foreach (byte value in rReg)
-            {
-                rgkey[i] = (byte)(DDMASK[i] ^ value);
-                i++;
-            }
-
-
-            // Append 8-MSB from the resulting masked array
-            byte[] registerKey = new byte[DDMASK.Length];
-            Array.Copy(rgkey, registerKey, rgkey.Length);
-
-            //1234567890|1234567890|12345
-            Debug.WriteLine($"FINAL KEY _: {ConversionHelper.ByteArrayToHexString(registerKey)}");
-
-            return registerKey;
-        }
-
         byte[] SetDataKeyVariantKSN(byte[] ksn, int counterValue)
         {
             byte[] dataSessionKSN = new byte[ksn.Length];
@@ -389,22 +315,6 @@ namespace DecryptTrack1Data.Decryptor
             {
                 // generate register mask
                 byte[] maskedKey = SetDataMask(registerKeys);
-
-                // generate left register
-                //byte[] leftRegister = GenerateDataRegister(maskedKey, ksn);
-
-                // generate right register
-                //byte[] rightRegister = GenerateDataRegister(registerKeys, ksn);
-
-                //1234567890|1234567890|12345
-                //Debug.WriteLine($"SESS REGSTR: {ConversionHelper.ByteArrayToHexString(leftRegister)}-{ConversionHelper.ByteArrayToHexString(rightRegister)}");
-
-                // Final Permutation
-                //byte[] finalKey = FinalPermutationOnSessionKey(leftRegister, rightRegister);
-
-                // TDES-encrypt the masked key in two parts, using itself as the key. This is a one-way function (OWF).
-                // The leftmost 8 bytes are encrypted, then the rightmost 8 bytes are encrypted separately. In each case,
-                // the key is the entire original 16-byte maskedPEK from the above step, expanded to 24 bytes per EDE3.
 
                 // left half
                 byte[] ede3Key = EDE3KeyExpand(maskedKey);
@@ -473,6 +383,13 @@ namespace DecryptTrack1Data.Decryptor
             return registerKeys;
         }
 
+        /// <summary>
+        /// Decryption setup requires to iterate through the number of potential swipes that have already occurred with the KSN
+        /// being used to decrypt. Once we iterate through all possibilities, we end up with the final decrypting key used to decrypt the data.
+        /// </summary>
+        /// <param name="ksn"></param>
+        /// <param name="cipher"></param>
+        /// <returns></returns>
         public byte[] DecryptData(byte[] ksn, string cipher)
         {
             byte[] finalBytes = null;
@@ -497,37 +414,6 @@ namespace DecryptTrack1Data.Decryptor
                 Debug.WriteLine($"ACTIVE KSN : {ConversionHelper.ByteArrayToHexString(baseKSN)}");
 
                 iPEK = GenerateKey(iPEK, baseKSN);
-
-                //byte[] registerKeys = new byte[RegisterSize];
-
-                // LEFT REGISTER ENCRYPTION
-                //byte[] leftRegister = GenerateLeftRegister(baseKSN);
-                //Array.Copy(leftRegister, registerKeys, leftRegister.Length);
-
-                // RIGHT REGISTER ENCRYPTION
-                //byte[] rightRegister = GenerateRightRegister(baseKSN);
-                //Array.Copy(rightRegister, 0, registerKeys, rightRegister.Length, rightRegister.Length);
-
-                //1234567890|1234567890|12345
-                //Debug.WriteLine($"IPEK_______: {ConversionHelper.ByteArrayToHexString(leftRegister)}-{ConversionHelper.ByteArrayToHexString(rightRegister)}");
-
-                //byte[] sessionKey = CreateSessionKey(registerKeys, baseKSN);
-
-                //1234567890|1234567890|12345
-                //Debug.WriteLine($"SESSION KEY: {ConversionHelper.ByteArrayToHexString(sessionKey)}");
-
-                /*using (var tdes = new TripleDESCryptoServiceProvider())
-                {
-                    tdes.Mode = CipherMode.ECB;
-                    tdes.Padding = PaddingMode.PKCS7;
-                    tdes.Key = sessionKey;
-
-                    using (var transform = tdes.CreateEncryptor())
-                    {
-                        byte[] textBytes = UTF8Encoding.UTF8.GetBytes(cipher);
-                        finalBytes = transform.TransformFinalBlock(textBytes, 0, textBytes.Length);
-                    }
-                }*/
             }
 
             byte[] sessionKey = CreateSessionKey(iPEK, baseKSN);
@@ -549,8 +435,42 @@ namespace DecryptTrack1Data.Decryptor
                 }
             }
 
-            //return Convert.ToBase64String(finalBytes, 0, finalBytes.Length);
             return finalBytes;
+        }
+
+        public TrackData RetrieveTrackData(byte[] trackInformation)
+        {
+            TrackData trackData = new TrackData()
+            {
+                PANData = string.Empty,
+                Name = string.Empty,
+                ExpirationDate = string.Empty,
+                DiscretionaryData = string.Empty
+            };
+
+            string decryptedTrack = ConversionHelper.ByteArrayToUTF8String(trackInformation);
+
+            // expected format
+            MatchCollection match = Regex.Matches(decryptedTrack, "(?:[^^^?]+)", RegexOptions.Compiled);
+
+            if (match.Count >= 3)
+            {
+                trackData.PANData = match[0].Value.Substring(8, 14);        // TODO: first two bytes being repored as 0x86 0x1f
+                trackData.Name = match[1].Value;
+                trackData.ExpirationDate = match[2].Value.Substring(0, 4);
+                trackData.ServiceCode = match[2].Value.Substring(4, 3);
+
+                if (match.Count >= 4)
+                {
+                    MatchCollection discretionary = Regex.Matches(match[3].Value, "^[[:ascii:]]+");
+                    if (discretionary.Count > 0)
+                    {
+                        trackData.DiscretionaryData = discretionary[0].Value;
+                    }
+                }
+            }
+
+            return trackData;
         }
     }
 }

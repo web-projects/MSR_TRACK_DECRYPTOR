@@ -53,6 +53,16 @@ namespace DecryptTrack1Data.Helpers
         }
 
         /// <summary>
+        /// Expects byte array and converts it to UTF8 formatted string
+        /// </summary>
+        /// <param name="value"></param>
+        /// <returns>returns UTF8 formatted string</returns>
+        public static string ByteArrayToUTF8String(byte[] value)
+        {
+            return UnicodeEncoding.UTF8.GetString(value);
+        }
+
+        /// <summary>
         /// Expects the first array to equal or smaller than the second array
         /// </summary>
         /// <param name="array1"></param>
