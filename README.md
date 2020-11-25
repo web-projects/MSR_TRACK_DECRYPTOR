@@ -31,3 +31,4 @@ This an application for decrypting MSR TRACK Data.
 ### HISTORY ###
 
 * 20201123 - Initial repository
+* 20201124 - Completed decoder portion.
