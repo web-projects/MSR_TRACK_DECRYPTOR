@@ -1,6 +1,6 @@
 ﻿namespace DecryptTrack1Data.Helpers
 {
-    public class TrackData
+    public class MSRTrackData
     {
         public string PANData { get; set; }
         public string Name { get; set; }

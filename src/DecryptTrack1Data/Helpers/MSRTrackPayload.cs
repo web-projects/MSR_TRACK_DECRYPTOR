@@ -1,6 +1,6 @@
 ﻿namespace DecryptTrack1Data.Helpers
 {
-    public class TrackPayload
+    public class MSRTrackPayload
     {
         public string KSN { get; set; }
         public string EncryptedData { get; set; }

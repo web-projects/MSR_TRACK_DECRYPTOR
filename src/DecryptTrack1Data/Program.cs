@@ -30,10 +30,10 @@ namespace DecryptTrack1Data
     class Program
     {
         // Actual Transactions
-        public static List<TrackPayload> trackPayload = new List<TrackPayload>()
+        public static List<MSRTrackPayload> trackPayload = new List<MSRTrackPayload>()
         {
             // TEST: FFFF9876543211000620
-            new TrackPayload()
+            new MSRTrackPayload()
             {
                 KSN = "FFFF9876543211000620",
                 EncryptedData = "87A73106F57B8FBDD383A257ED8C713A62BFAE83E9B0D202C50FE1F7DA8739338C768BA61506C1D3404191C7C8C3016929A0CCE6621B95191D5A006382605FB0C17963725B548ABC37FFDA146E0429E7",
@@ -47,12 +47,10 @@ namespace DecryptTrack1Data
             {
                 foreach (var item in trackPayload)
                 {
-                    TrackDataDecryptor decryptor = new TrackDataDecryptor();
-
-                    byte[] KSN = ConversionHelper.HexToByteArray(item.KSN);
+                    MSRTrackDataDecryptor decryptor = new MSRTrackDataDecryptor();
 
                     // decryptor in action
-                    byte[] trackInformation = decryptor.DecryptData(KSN, item.EncryptedData);
+                    byte[] trackInformation = decryptor.DecryptData(item.KSN, item.EncryptedData);
                     
                     string decryptedTrack = ConversionHelper.ByteArrayToHexString(trackInformation);
 
@@ -64,7 +62,7 @@ namespace DecryptTrack1Data
                     bool result = StructuralComparisons.StructuralEqualityComparer.Equals(expectedValue, trackInformation);
                     Console.WriteLine($"EQUAL  : [{result}]");
 
-                    TrackData trackData = decryptor.RetrieveTrackData(trackInformation);
+                    MSRTrackData trackData = decryptor.RetrieveTrackData(trackInformation);
                     Console.WriteLine($"CHOLDER: [{trackData.Name}]");
                 }
             }

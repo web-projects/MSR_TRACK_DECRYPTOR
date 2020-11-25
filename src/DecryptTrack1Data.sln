@@ -11,14 +11,14 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "source", "source", "{8DAB9E
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Decryptor", "Decryptor", "{68782E4F-4C4E-4D53-BD14-2DFCF4788B1E}"
 	ProjectSection(SolutionItems) = preProject
-		TrackDataDecryptorTests.cs = TrackDataDecryptorTests.cs
+		MSRTrackDataDecryptorTests.cs = MSRTrackDataDecryptorTests.cs
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TrackDataDecryptor.Tests", "..\test\TrackDataDecryptor.Tests\TrackDataDecryptor.Tests.csproj", "{6D304DCF-404D-4122-9BA3-D9000EEDCC47}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MSRTrackDataDecryptor.Tests", "..\test\TrackDataDecryptor.Tests\MSRTrackDataDecryptor.Tests.csproj", "{6D304DCF-404D-4122-9BA3-D9000EEDCC47}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Helpers", "Helpers", "{7DFE5740-49E9-4098-B4C5-A86B19130E37}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TestHelper", "..\Test\TestHelper\TestHelper.csproj", "{6B1C5B44-00FB-44FB-8A40-64EEC527EF0A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestHelper", "..\Test\TestHelper\TestHelper.csproj", "{6B1C5B44-00FB-44FB-8A40-64EEC527EF0A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -11,7 +11,7 @@ namespace DecryptTrack1Data.Decryptor
     /// MSR Track Decryptor to allow extraction on the following:
     /// PAN, NAME, ADDITIONAL DATA (EXPIRATION DATE, SERVICE CODE), DISCRETIONARY DATA (PVKI, PVV, CVV, CVC)
     /// </summary>
-    public class TrackDataDecryptor : ITrackDataDecryptor
+    public class MSRTrackDataDecryptor : IMSRTrackDataDecryptor
     {
         const int RegisterSize = 16;
 
@@ -26,7 +26,7 @@ namespace DecryptTrack1Data.Decryptor
         readonly byte[] DDMASK = new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x00, 0x00 };
         readonly byte[] PNMASK = new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF };
 
-        public TrackDataDecryptor()
+        public MSRTrackDataDecryptor()
         {
             BDK24 = BDK + BDK.Substring(0, 16);
             BDKMASK = ConversionHelper.HexToByteArray(BDK);
@@ -390,19 +390,22 @@ namespace DecryptTrack1Data.Decryptor
         /// <param name="ksn"></param>
         /// <param name="cipher"></param>
         /// <returns></returns>
-        public byte[] DecryptData(byte[] ksn, string cipher)
+        public byte[] DecryptData(string initialKSN, string cipher)
         {
             byte[] finalBytes = null;
 
+            // Initial KSN
+            byte[] ksn = ConversionHelper.HexToByteArray(initialKSN);
+
             List<int> totalPasses = GetTotalEncryptionPasses(ksn);
 
-            // base IPEK
+            // Base IPEK
             byte[] iPEK = GenerateIPEK(ksn);
 
-            // set KSN counter to 0
+            // Set KSN counter to 0
             byte[] ksnZeroCounter = SetKSNZeroCounter(ksn);
 
-            // set BASE KSN
+            // Set BASE KSN
             byte[] baseKSN = SetDataKeyVariantKSN(ksnZeroCounter, 0);
             Debug.WriteLine($"BASE KSN __: {ConversionHelper.ByteArrayToHexString(baseKSN)}");
 
@@ -438,9 +441,9 @@ namespace DecryptTrack1Data.Decryptor
             return finalBytes;
         }
 
-        public TrackData RetrieveTrackData(byte[] trackInformation)
+        public MSRTrackData RetrieveTrackData(byte[] trackInformation)
         {
-            TrackData trackData = new TrackData()
+            MSRTrackData trackData = new MSRTrackData()
             {
                 PANData = string.Empty,
                 Name = string.Empty,
