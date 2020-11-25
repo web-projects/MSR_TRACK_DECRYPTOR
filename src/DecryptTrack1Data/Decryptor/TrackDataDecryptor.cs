@@ -3,27 +3,37 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Security.Cryptography;
-using System.Text;
 
-namespace DecryptTrack1Data
+namespace DecryptTrack1Data.Decryptor
 {
     /// <summary>
     /// BDK        : 0123456789ABCDEFFEDCBA9876543210
     /// KSN        : FFFF9876543211000620
     /// DERIVED KEY: AC2B83C506DEC9D5E27D51E1D70559E7
     /// </summary>
-    public static class Decryptor
+    public class TrackDataDecryptor : ITrackDataDecryptor
     {
-        static readonly int RegisterSize = 16;
+        const int RegisterSize = 16;
 
-        static readonly string BDK = "0123456789ABCDEFFEDCBA9876543210";
-        static readonly string BDK24 = BDK + BDK.Substring(0, 16);
-        static readonly byte[] BDKMASK = ConversionHelper.HexToByteArray(BDK);
+        const string BDK = "0123456789ABCDEFFEDCBA9876543210";
+        readonly string BDK24;
+        readonly byte[] BDKMASK;
 
-        static readonly byte[] KSNZERO = new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xE0, 0x00, 0x00 };
-        static readonly byte[] RGMASK = new byte[] { 0xC0, 0xC0, 0xC0, 0xC0, 0x00, 0x00, 0x00, 0x00, 0xC0, 0xC0, 0xC0, 0xC0, 0x00, 0x00, 0x00, 0x00 };
-        static readonly byte[] DDMASK = new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x00, 0x00 };
-        static readonly byte[] PNMASK = new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF };
+        readonly byte[] KSNZERO = new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xE0, 0x00, 0x00 };
+        readonly byte[] RGMASK = new byte[] { 0xC0, 0xC0, 0xC0, 0xC0, 0x00, 0x00, 0x00, 0x00, 0xC0, 0xC0, 0xC0, 0xC0, 0x00, 0x00, 0x00, 0x00 };
+        readonly byte[] DDMASK = new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x00, 0x00 };
+        readonly byte[] PNMASK = new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF };
+
+        public TrackDataDecryptor()
+        {
+            BDK24 = BDK + BDK.Substring(0, 16);
+            BDKMASK = ConversionHelper.HexToByteArray(BDK);
+        }
+
+        public void Dispose()
+        {
+
+        }
 
         /// <summary>
         /// TripleDES encrypt FFFF9876543210E0 with the 24 byte "0123456789ABCDEFFEDCBA98765432100123456789ABCDEF" BDK.
@@ -31,7 +41,7 @@ namespace DecryptTrack1Data
         /// </summary>
         /// <param name="ksn"></param>
         /// <returns></returns>
-        static byte[] SetKSNZeroCounter(byte[] ksn)
+        byte[] SetKSNZeroCounter(byte[] ksn)
         {
             byte[] zeroksn = new byte[ksn.Length];
             int i = 0;
@@ -61,7 +71,7 @@ namespace DecryptTrack1Data
         ///	= C1E385A789ABCDEF3E1C7A5876543210C1E385A789ABCDEF
         /// </summary>
         /// <returns></returns>
-        static byte[] SetRightRegisterMask()
+        byte[] SetRightRegisterMask()
         {
             byte[] rrksn = new byte[BDKMASK.Length];
             int i = 0;
@@ -87,7 +97,7 @@ namespace DecryptTrack1Data
         /// </summary>
         /// <param name="ksn"></param>
         /// <returns></returns>
-        static List<int> GetTotalEncryptionPasses(byte[] ksn)
+        List<int> GetTotalEncryptionPasses(byte[] ksn)
         {
             int passes = 0;
 
@@ -113,7 +123,7 @@ namespace DecryptTrack1Data
             return totalShifts;
         }
 
-        static byte[] GenerateLeftRegister(byte[] ksnZeroCounter)
+        byte[] GenerateLeftRegister(byte[] ksnZeroCounter)
         {
             using (var tdes = new TripleDESCryptoServiceProvider())
             {
@@ -132,7 +142,7 @@ namespace DecryptTrack1Data
             }
         }
 
-        static byte[] EncryptRegister(byte[] ksnZeroCounter, byte[] maskedKSN)
+        byte[] EncryptRegister(byte[] ksnZeroCounter, byte[] maskedKSN)
         {
             using (var tdes = new TripleDESCryptoServiceProvider())
             {
@@ -151,7 +161,7 @@ namespace DecryptTrack1Data
             }
         }
 
-        static byte[] GenerateRightRegister(byte[] ksnZeroCounter)
+        byte[] GenerateRightRegister(byte[] ksnZeroCounter)
         {
             using (var tdes = new TripleDESCryptoServiceProvider())
             {
@@ -170,7 +180,7 @@ namespace DecryptTrack1Data
             }
         }
 
-        static byte[] SetDataMask(byte[] key)
+        byte[] SetDataMask(byte[] key)
         {
             byte[] rgkey = new byte[DDMASK.Length];
             int i = 0;
@@ -192,7 +202,7 @@ namespace DecryptTrack1Data
             return registerKey;
         }
 
-        static byte[] SetRegisterMask(byte[] key)
+        byte[] SetRegisterMask(byte[] key)
         {
             byte[] rgkey = new byte[RGMASK.Length];
             int i = 0;
@@ -214,7 +224,7 @@ namespace DecryptTrack1Data
             return registerKey;
         }
 
-        static byte[] SetSessionRegisterMask(byte[] ksn, byte[] dataKey)
+        byte[] SetSessionRegisterMask(byte[] ksn, byte[] dataKey)
         {
             byte[] baseKSN = new byte[8];
             Array.Copy(ksn, 2, baseKSN, 0, 8);
@@ -238,7 +248,7 @@ namespace DecryptTrack1Data
             return ssRegister;
         }
 
-        static byte[] GenerateDataRegister(byte[] key, byte[] ksn)
+        byte[] GenerateDataRegister(byte[] key, byte[] ksn)
         {
             // break down key in two parts
             byte[] top8Value = new byte[key.Length / 2];
@@ -286,7 +296,7 @@ namespace DecryptTrack1Data
             }
         }
 
-        static byte[] EDE3KeyExpand(byte[] finalKey)
+        byte[] EDE3KeyExpand(byte[] finalKey)
         {
             int expandedKeyLen = finalKey.Length + finalKey.Length / 2;
             byte[] expandedKey = new byte[expandedKeyLen];
@@ -295,7 +305,7 @@ namespace DecryptTrack1Data
             return expandedKey;
         }
 
-        static byte[] FinalPermutationOnSessionKey(byte[] lReg, byte[] rReg)
+        byte[] FinalPermutationOnSessionKey(byte[] lReg, byte[] rReg)
         {
             byte[] rgkey = new byte[DDMASK.Length];
             int i = 0;
@@ -325,7 +335,7 @@ namespace DecryptTrack1Data
             return registerKey;
         }
 
-        static byte [] SetDataKeyVariantKSN(byte[] ksn, int counterValue)
+        byte[] SetDataKeyVariantKSN(byte[] ksn, int counterValue)
         {
             byte[] dataSessionKSN = new byte[ksn.Length];
 
@@ -339,8 +349,8 @@ namespace DecryptTrack1Data
                     if ((shiftReg & counterValue) > 0)
                     {
                         dataSessionKSN[5] |= (byte)((shiftReg >> 16) & 0x0000FF);
-                        dataSessionKSN[6] |= (byte)((shiftReg >>  8) & 0x0000FF);
-                        dataSessionKSN[7] |= (byte)((shiftReg >>  0) & 0x0000FF);
+                        dataSessionKSN[6] |= (byte)((shiftReg >> 8) & 0x0000FF);
+                        dataSessionKSN[7] |= (byte)((shiftReg >> 0) & 0x0000FF);
                     }
                 }
             }
@@ -352,7 +362,7 @@ namespace DecryptTrack1Data
             return dataSessionKSN;
         }
 
-        static byte[] GenerateKey(byte[] key, byte[] ksn)
+        byte[] GenerateKey(byte[] key, byte[] ksn)
         {
             // generate register mask
             byte[] maskedKey = SetRegisterMask(key);
@@ -373,7 +383,7 @@ namespace DecryptTrack1Data
             return registerKeys;
         }
 
-        static byte[] CreateSessionKey(byte[] registerKeys, byte[] ksn)
+        byte[] CreateSessionKey(byte[] registerKeys, byte[] ksn)
         {
             try
             {
@@ -444,8 +454,8 @@ namespace DecryptTrack1Data
                 return null;
             }
         }
-        
-        static byte[] GenerateIPEK(byte[] baseKSN)
+
+        byte[] GenerateIPEK(byte[] baseKSN)
         {
             byte[] registerKeys = new byte[RegisterSize];
 
@@ -463,7 +473,7 @@ namespace DecryptTrack1Data
             return registerKeys;
         }
 
-        public static byte[] DecryptData(byte[] ksn, string cipher)
+        public byte[] DecryptData(byte[] ksn, string cipher)
         {
             byte[] finalBytes = null;
 

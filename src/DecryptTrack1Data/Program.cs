@@ -1,7 +1,7 @@
-﻿using DecryptTrack1Data.Helpers;
+﻿using DecryptTrack1Data.Decryptor;
+using DecryptTrack1Data.Helpers;
 using System;
 using System.Diagnostics;
-using System.Text;
 
 namespace DecryptTrack1Data
 {
@@ -32,12 +32,13 @@ namespace DecryptTrack1Data
 
         // ENCRYPTED TRACK DATA
         public static readonly string DATA = "87A73106F57B8FBDD383A257ED8C713A62BFAE83E9B0D202C50FE1F7DA8739338C768BA61506C1D3404191C7C8C3016929A0CCE6621B95191D5A006382605FB0C17963725B548ABC37FFDA146E0429E7";
-        
+
         static void Main(string[] args)
         {
             try
             {
-                byte[] trackData = Decryptor.DecryptData(KSN, DATA);
+                TrackDataDecryptor decryptor = new TrackDataDecryptor();
+                byte[] trackData = decryptor.DecryptData(KSN, DATA);
                 string convertedTrack = ConversionHelper.ByteArrayToHexString(trackData);
 
                 //1234567890|1234567890|12345
