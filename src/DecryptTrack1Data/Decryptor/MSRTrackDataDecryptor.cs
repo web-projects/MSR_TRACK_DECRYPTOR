@@ -117,7 +117,7 @@ namespace DecryptTrack1Data.Decryptor
                 }
             }
             //Debug.WriteLine($"TOTAL SHIFT: {i}");
-            //Debug.WriteLine($"TOTAL PASS : {passes}");
+            Debug.WriteLine($"TOTAL PASS : {passes}");
 
             return totalShifts;
         }
@@ -451,24 +451,32 @@ namespace DecryptTrack1Data.Decryptor
                 DiscretionaryData = string.Empty
             };
 
-            string decryptedTrack = ConversionHelper.ByteArrayToUTF8String(trackInformation);
+            //string decryptedTrack = ConversionHelper.ByteArrayToUTF8String(trackInformation);
+            string decryptedTrack = ConversionHelper.ByteArrayToAsciiString(trackInformation);
 
-            // expected format
-            MatchCollection match = Regex.Matches(decryptedTrack, "(?:[^^^?]+)", RegexOptions.Compiled);
+            // expected format: PAN^NAME^ADDITIONAL DATA^DISCRETIONARY DATA
+            //MatchCollection match = Regex.Matches(decryptedTrack, "(?:[^^^?]+)", RegexOptions.Compiled);
+            MatchCollection match = Regex.Matches(decryptedTrack, "(?:[^^^?]+).([\x20-\x7F]+)", RegexOptions.Compiled);
 
-            if (match.Count >= 3)
+            if (match.Count >= 2)
             {
-                trackData.PANData = match[0].Value.Substring(8, 14);        // TODO: first two bytes being repored as 0x86 0x1f
-                trackData.Name = match[1].Value;
-                trackData.ExpirationDate = match[2].Value.Substring(0, 4);
-                trackData.ServiceCode = match[2].Value.Substring(4, 3);
+                // First match has junk
+                MatchCollection track1 = Regex.Matches(match[1].Value, "(?:[^^^?]+)", RegexOptions.Compiled);
 
-                if (match.Count >= 4)
+                if (track1.Count >= 3)
                 {
-                    MatchCollection discretionary = Regex.Matches(match[3].Value, "^[[:ascii:]]+");
-                    if (discretionary.Count > 0)
+                    trackData.PANData = Regex.Replace(track1[0].Value, @"[^\u0020-\u007E]", string.Empty);
+                    trackData.Name = track1[1].Value;
+                    trackData.ExpirationDate = track1[2].Value.Substring(0, 4);
+                    trackData.ServiceCode = track1[2].Value.Substring(4, 3);
+
+                    if (track1.Count >= 4)
                     {
-                        trackData.DiscretionaryData = discretionary[0].Value;
+                        MatchCollection discretionary = Regex.Matches(track1[3].Value, "^[[:ascii:]]+");
+                        if (discretionary.Count > 0)
+                        {
+                            trackData.DiscretionaryData = discretionary[0].Value;
+                        }
                     }
                 }
             }

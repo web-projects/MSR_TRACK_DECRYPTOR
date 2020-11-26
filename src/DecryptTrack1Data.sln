@@ -10,9 +10,6 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "source", "source", "{8DAB9E12-3561-4C22-A129-F447D845F70F}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Decryptor", "Decryptor", "{68782E4F-4C4E-4D53-BD14-2DFCF4788B1E}"
-	ProjectSection(SolutionItems) = preProject
-		MSRTrackDataDecryptorTests.cs = MSRTrackDataDecryptorTests.cs
-	EndProjectSection
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MSRTrackDataDecryptor.Tests", "..\test\TrackDataDecryptor.Tests\MSRTrackDataDecryptor.Tests.csproj", "{6D304DCF-404D-4122-9BA3-D9000EEDCC47}"
 EndProject

@@ -5,7 +5,7 @@ using System.Text;
 
 namespace TestHelper
 {
-    public static class Helper
+    public static class ConversionHelper
     {
         /// <summary>
         /// Convert "0123DEF01234" (hex string) to binary data: 0x01 0x23 0xDE 0xF0 0x12 0x34
