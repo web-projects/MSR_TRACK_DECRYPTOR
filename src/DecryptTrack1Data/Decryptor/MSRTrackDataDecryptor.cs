@@ -14,6 +14,9 @@ namespace DecryptTrack1Data.Decryptor
     public class MSRTrackDataDecryptor : IMSRTrackDataDecryptor
     {
         const int RegisterSize = 16;
+        const int CardholderNameSize = 26;
+        const int DecryptedTrackDataMinimumLength = 73;
+        const int MinimumCipherLength = 96;
 
         // BASE-DERIVATION KEY
         const string BDK = "0123456789ABCDEFFEDCBA9876543210";
@@ -441,6 +444,82 @@ namespace DecryptTrack1Data.Decryptor
             return finalBytes;
         }
 
+        /*public MSRTrackData RetrieveTrackData(byte[] trackInformation)
+        {
+            MSRTrackData trackData = new MSRTrackData()
+            {
+                PANData = string.Empty,
+                Name = string.Empty,
+                ExpirationDate = string.Empty,
+                DiscretionaryData = string.Empty
+            };
+
+            // xF�E�t�24180001234563^FDCS TEST CARD /MASTERCARD^25121010001111123456789012?C�
+            //string decryptedTrack = ConversionHelper.ByteArrayToUTF8String(trackInformation);
+            //string decryptedTrack = ConversionHelper.ByteArrayToAsciiString(trackInformation);
+
+            // xF?E?t?24180001234563^FDCS TEST CARD /MASTERCARD^25121010001111123456789012?C?
+            string decryptedTrack = Regex.Replace(ConversionHelper.ByteArrayToAsciiString(trackInformation), @"[^\u0020-\u007E]", string.Empty);
+
+            // expected format: PAN^NAME^ADDITIONAL DATA^DISCRETIONARY DATA
+            //MatchCollection match = Regex.Matches(decryptedTrack, "(?:[^^^?]+)", RegexOptions.Compiled);
+            MatchCollection match = Regex.Matches(decryptedTrack, "([^^^]+)", RegexOptions.Compiled);
+
+            if (match.Count >= 3)
+            {
+                // PAN DATA
+                MatchCollection pan = Regex.Matches(match[0].Value, "(?:[^^^?]+)", RegexOptions.Compiled);
+
+                if (pan.Count >= 4)
+                { 
+                    trackData.PANData = Regex.Replace(pan[3].Value, @"[^\u0020-\u007E]", string.Empty);
+                }
+
+                // NAME
+                trackData.Name = match[1].Value;
+
+                // ADDITIONAL DATA
+                MatchCollection track1 = Regex.Matches(match[2].Value, "(?:[^^^?]+)", RegexOptions.Compiled);
+
+                if (track1.Count >= 1)
+                {
+                    trackData.ExpirationDate = track1[0].Value.Substring(0, 4);
+                    trackData.ServiceCode = track1[0].Value.Substring(4, 3);
+
+                    if (track1.Count >= 2)
+                    {
+                        MatchCollection discretionary = Regex.Matches(track1[1].Value, "^[[:ascii:]]+");
+                        if (discretionary.Count > 0)
+                        {
+                            trackData.DiscretionaryData = discretionary[0].Value;
+                        }
+                    }
+                }
+            }
+
+            return trackData;
+        }*/
+
+        /// <summary>
+        /// The Track 1 structure is specified as:
+        ///     STX : Start sentinel "%"
+        ///     FC : Format code "B" (The format described here.Format "A" is reserved for proprietary use.)
+        ///     PAN : Payment card number 4400664987366029, up to 19 digits
+        ///     FS : Separator "^"
+        ///     NM : Name, 2 to 26 characters(including separators, where appropriate, between surname, first name etc.)
+        ///     FS : Separator "^"
+        ///     ED : Expiration data, 4 digits or "^"
+        ///     SC : Service code, 3 digits or "^"
+        ///     DD : Discretionary data, balance of characters
+        ///     ETX : End sentinel "?"
+        ///     LRC : Longitudinal redundancy check, calculated according to ISO/IEC 7811-2
+        ///     
+        /// REGULAR EXPRESSION
+        /// ^%B([0-9]{1,19})\^([^\^]{2,26})\^([0-9]{4}|\^)([0-9]{3}|\^)([^\?]+)\?$
+        /// 
+        /// </summary>
+        /// <param name="trackInformation"></param>
+        /// <returns></returns>
         public MSRTrackData RetrieveTrackData(byte[] trackInformation)
         {
             MSRTrackData trackData = new MSRTrackData()
@@ -451,33 +530,28 @@ namespace DecryptTrack1Data.Decryptor
                 DiscretionaryData = string.Empty
             };
 
-            //string decryptedTrack = ConversionHelper.ByteArrayToUTF8String(trackInformation);
-            string decryptedTrack = ConversionHelper.ByteArrayToAsciiString(trackInformation);
-
-            // expected format: PAN^NAME^ADDITIONAL DATA^DISCRETIONARY DATA
-            //MatchCollection match = Regex.Matches(decryptedTrack, "(?:[^^^?]+)", RegexOptions.Compiled);
-            MatchCollection match = Regex.Matches(decryptedTrack, "(?:[^^^?]+).([\x20-\x7F]+)", RegexOptions.Compiled);
-
-            if (match.Count >= 2)
+            // avoid encrypted track data errors
+            if (trackInformation.Length >= DecryptedTrackDataMinimumLength)
             {
-                // First match has junk
-                MatchCollection track1 = Regex.Matches(match[1].Value, "(?:[^^^?]+)", RegexOptions.Compiled);
+                // clean up track data
+                string decryptedTrack = Regex.Replace(ConversionHelper.ByteArrayToAsciiString(trackInformation), @"[^\u0020-\u007E]", string.Empty, RegexOptions.Compiled);
+                //Debug.WriteLine($"DECRYPTED _: {decryptedTrack}");
 
-                if (track1.Count >= 3)
+                // expected format: PAN^NAME^ADDITIONAL-DATA^DISCRETIONARY-DATA
+                MatchCollection match = Regex.Matches(decryptedTrack, @"^%B([0-9]{1,19})\^([^\^]{2,26})\^([0-9]{4}|\^)([0-9]{3}|\^)([^\?]+)\?$", RegexOptions.Compiled);
+
+                // DISCRETIONARY DATA is optional
+                if (match.Count == 1 && match[0].Groups.Count >= 5)
                 {
-                    trackData.PANData = Regex.Replace(track1[0].Value, @"[^\u0020-\u007E]", string.Empty);
-                    trackData.Name = track1[1].Value;
-                    trackData.ExpirationDate = track1[2].Value.Substring(0, 4);
-                    trackData.ServiceCode = track1[2].Value.Substring(4, 3);
+                    // PAN DATA
+                    trackData.PANData = match[0].Groups[1].Value;
 
-                    if (track1.Count >= 4)
-                    {
-                        MatchCollection discretionary = Regex.Matches(track1[3].Value, "^[[:ascii:]]+");
-                        if (discretionary.Count > 0)
-                        {
-                            trackData.DiscretionaryData = discretionary[0].Value;
-                        }
-                    }
+                    // NAME
+                    trackData.Name = match[0].Groups[2].Value;
+
+                    // ADDITIONAL DATA
+                    trackData.ExpirationDate = match[0].Groups[3].Value;
+                    trackData.ServiceCode = match[0].Groups[4].Value;
                 }
             }
 
