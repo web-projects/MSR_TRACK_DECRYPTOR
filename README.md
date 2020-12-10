@@ -35,3 +35,4 @@ This an application for decrypting MSR TRACK Data.
 * 20201125 - Added Tests.
 *          - Added TrackData information.
 * 20201203 - Enhanced track data extraction.
+* 20201209 - Added appsettings.json

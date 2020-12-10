@@ -4,6 +4,9 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using System.Reflection;
 
 namespace DecryptTrack1Data
 {
@@ -48,6 +51,56 @@ namespace DecryptTrack1Data
         };
 
         static void Main(string[] args)
+        {
+            Console.WriteLine($"\r\n==========================================================================================");
+            Console.WriteLine($"{Assembly.GetEntryAssembly().GetName().Name} - Version {Assembly.GetEntryAssembly().GetName().Version}");
+            Console.WriteLine($"==========================================================================================\r\n");
+
+            //InternalTesting();
+            ConfigurationLoad();
+        }
+
+        static void ConfigurationLoad()
+        {
+            // Get appsettings.json config.
+            IConfiguration configuration = new ConfigurationBuilder()
+                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+                .AddEnvironmentVariables()
+                .Build();
+
+            string onlinePinKsn = configuration.GetValue<string>("OnlinePinGroup:OnlinePin:KSN");
+            string onlinePinData = configuration.GetValue<string>("OnlinePinGroup:OnlinePin:EncryptedData");
+
+            try
+            {
+                MSRTrackDataDecryptor decryptor = new MSRTrackDataDecryptor();
+
+                Console.WriteLine($"KSN      : {onlinePinKsn}");
+                Console.WriteLine($"DATA     : {onlinePinData}");
+
+                // decryptor in action
+                byte[] trackInformation = decryptor.DecryptData(onlinePinKsn, onlinePinData);
+
+                string decryptedTrack = ConversionHelper.ByteArrayToHexString(trackInformation);
+
+                //1234567890|1234567890|12345
+                Console.WriteLine($"OUTPUT   : {decryptedTrack}");
+                Debug.WriteLine($"OUTPUT ____: {decryptedTrack}");
+
+                //byte[] expectedValue = ConversionHelper.HexToByteArray(item.DecryptedData);
+                //bool result = StructuralComparisons.StructuralEqualityComparer.Equals(expectedValue, trackInformation);
+                //Console.WriteLine($"EQUAL  : [{result}]");
+
+                //MSRTrackData trackData = decryptor.RetrieveTrackData(trackInformation);
+                //Console.WriteLine($"CHOLDER: [{trackData.Name}]");
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"EXCEPTION: {e.Message}");
+            }
+        }
+
+        static void InternalTesting()
         {
             try
             {

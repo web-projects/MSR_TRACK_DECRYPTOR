@@ -426,6 +426,7 @@ namespace DecryptTrack1Data.Decryptor
 
             //1234567890|1234567890|12345
             Debug.WriteLine($"DECRYPT KEY: {ConversionHelper.ByteArrayToHexString(sessionKey)}");
+            Console.WriteLine($"DECRYPTOR: {ConversionHelper.ByteArrayToHexString(sessionKey)}");
 
             using (var tdes = new TripleDESCryptoServiceProvider())
             {

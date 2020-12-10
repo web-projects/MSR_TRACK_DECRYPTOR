@@ -14,8 +14,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\DecryptTrack1Data\DecryptTrack1Data.csproj" />
     <ProjectReference Include="..\TestHelper\TestHelper.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="DecryptTrack1Data">
+      <HintPath>..\..\src\DecryptTrack1Data\bin\Debug\netcoreapp3.1\DecryptTrack1Data.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
 </Project>
