@@ -539,7 +539,7 @@ namespace DecryptTrack1Data.Decryptor
                 //Debug.WriteLine($"DECRYPTED _: {decryptedTrack}");
 
                 // expected format: PAN^NAME^ADDITIONAL-DATA^DISCRETIONARY-DATA
-                MatchCollection match = Regex.Matches(decryptedTrack, @"^%B([0-9]{1,19})\^([^\^]{2,26})\^([0-9]{4}|\^)([0-9]{3}|\^)([^\?]+)\?$", RegexOptions.Compiled);
+                MatchCollection match = Regex.Matches(decryptedTrack, @"%B([0-9 ]{1,19})\^([^\^]{2,26})\^([0-9]{4}|\^)([0-9]{3}|\^)([^\?]+)\?", RegexOptions.Compiled);
 
                 // DISCRETIONARY DATA is optional
                 if (match.Count == 1 && match[0].Groups.Count >= 5)
@@ -553,13 +553,17 @@ namespace DecryptTrack1Data.Decryptor
                     // ADDITIONAL DATA
                     trackData.ExpirationDate = match[0].Groups[3].Value;
                     trackData.ServiceCode = match[0].Groups[4].Value;
+
+                    // DISCRETIONARY DATA
+                    if (match[0].Groups.Count > 5)
+                        trackData.DiscretionaryData = match[0].Groups[5].Value;
                 }
             }
 
             return trackData;
         }
 
-        public MSRTrackData RetrieveAdditionalDataData(byte[] trackInformation)
+        public MSRTrackData RetrieveAdditionalData(byte[] trackInformation)
         {
             MSRTrackData trackData = new MSRTrackData()
             {

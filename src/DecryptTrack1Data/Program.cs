@@ -88,7 +88,8 @@ namespace DecryptTrack1Data
                 Console.WriteLine($"OUTPUT   : {decryptedTrack}");
                 Debug.WriteLine($"OUTPUT ____: {decryptedTrack}");
 
-                MSRTrackData trackInfo = decryptor.RetrieveAdditionalDataData(trackInformation);
+                //MSRTrackData trackInfo = decryptor.RetrieveAdditionalData(trackInformation);
+                MSRTrackData trackInfo = decryptor.RetrieveTrackData(trackInformation);
 
                 //1234567890|1234567890|12345
                 Console.WriteLine($"EXPIRATE : {trackInfo.ExpirationDate}");
