@@ -91,11 +91,16 @@ namespace DecryptTrack1Data
                 //MSRTrackData trackInfo = decryptor.RetrieveAdditionalData(trackInformation);
                 MSRTrackData trackInfo = decryptor.RetrieveTrackData(trackInformation);
 
+                string expirationDate = trackInfo.ExpirationDate.Substring(0, 2) + "/" + trackInfo.ExpirationDate.Substring(2, 2);
+
                 //1234567890|1234567890|12345
+                Debug.WriteLine($"PAN DATA     : {trackInfo.PANData}");
+                Debug.WriteLine($"EXPIR (YY/MM): {expirationDate}");
+                Debug.WriteLine($"SERVICE CODE : {trackInfo.ServiceCode}");
+                Debug.WriteLine($"DISCRETIONARY: {trackInfo.DiscretionaryData}");
+
                 Console.WriteLine($"EXPIRATE : {trackInfo.ExpirationDate}");
-                Debug.WriteLine($"EXPIR _____: {trackInfo.ExpirationDate}");
                 Console.WriteLine($"SERV CODE: {trackInfo.ServiceCode}");
-                Debug.WriteLine($"SERV CODE _: {trackInfo.ServiceCode}");
 
                 //byte[] expectedValue = ConversionHelper.HexToByteArray(item.DecryptedData);
                 //bool result = StructuralComparisons.StructuralEqualityComparer.Equals(expectedValue, trackInformation);
