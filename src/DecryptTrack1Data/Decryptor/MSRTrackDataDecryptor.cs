@@ -558,5 +558,38 @@ namespace DecryptTrack1Data.Decryptor
 
             return trackData;
         }
+
+        public MSRTrackData RetrieveAdditionalDataData(byte[] trackInformation)
+        {
+            MSRTrackData trackData = new MSRTrackData()
+            {
+                PANData = string.Empty,
+                Name = string.Empty,
+                ExpirationDate = string.Empty,
+                ServiceCode = string.Empty,
+                DiscretionaryData = string.Empty
+            };
+
+            // avoid encrypted track data errors
+            if (trackInformation.Length >= DecryptedTrackDataMinimumLength)
+            {
+                // clean up track data
+                string decryptedTrack = Regex.Replace(ConversionHelper.ByteArrayToAsciiString(trackInformation), @"[^\u0020-\u007E]", string.Empty, RegexOptions.Compiled);
+                //Debug.WriteLine($"DECRYPTED _: {decryptedTrack}");
+
+                // expected format: PAN^NAME^ADDITIONAL-DATA^DISCRETIONARY-DATA
+                MatchCollection match = Regex.Matches(decryptedTrack, @"([0-9]{1,19})\=([0-9]+)", RegexOptions.Compiled);
+
+                // DISCRETIONARY DATA is optional
+                if (match.Count == 1)
+                {
+                    // ADDITIONAL DATA
+                    trackData.ExpirationDate = match[0].Groups[2].Value.Substring(0, 4);
+                    trackData.ServiceCode = match[0].Groups[2].Value.Substring(4, 3);
+                }
+            }
+
+            return trackData;
+        }
     }
 }

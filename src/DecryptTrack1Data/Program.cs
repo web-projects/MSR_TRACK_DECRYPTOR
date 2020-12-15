@@ -7,6 +7,7 @@ using System.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
+using System.Text;
 
 namespace DecryptTrack1Data
 {
@@ -86,6 +87,14 @@ namespace DecryptTrack1Data
                 //1234567890|1234567890|12345
                 Console.WriteLine($"OUTPUT   : {decryptedTrack}");
                 Debug.WriteLine($"OUTPUT ____: {decryptedTrack}");
+
+                MSRTrackData trackInfo = decryptor.RetrieveAdditionalDataData(trackInformation);
+
+                //1234567890|1234567890|12345
+                Console.WriteLine($"EXPIRATE : {trackInfo.ExpirationDate}");
+                Debug.WriteLine($"EXPIR _____: {trackInfo.ExpirationDate}");
+                Console.WriteLine($"SERV CODE: {trackInfo.ServiceCode}");
+                Debug.WriteLine($"SERV CODE _: {trackInfo.ServiceCode}");
 
                 //byte[] expectedValue = ConversionHelper.HexToByteArray(item.DecryptedData);
                 //bool result = StructuralComparisons.StructuralEqualityComparer.Equals(expectedValue, trackInformation);
