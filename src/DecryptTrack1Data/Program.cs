@@ -1,13 +1,12 @@
 ﻿using DecryptTrack1Data.Decryptor;
 using DecryptTrack1Data.Helpers;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
+using System.Linq;
 using System.Reflection;
-using System.Text;
 
 namespace DecryptTrack1Data
 {
@@ -69,49 +68,67 @@ namespace DecryptTrack1Data
                 .AddEnvironmentVariables()
                 .Build();
 
-            string onlinePinKsn = configuration.GetValue<string>("OnlinePinGroup:OnlinePin:KSN");
-            string onlinePinData = configuration.GetValue<string>("OnlinePinGroup:OnlinePin:EncryptedData");
 
-            try
+            var onlinePin = configuration.GetSection("OnlinePinGroup:OnlinePin")
+                    .GetChildren()
+                    .ToList()
+                    .Select(x => new
+                    {
+                        onlinePinKsn = x.GetValue<string>("KSN"),
+                        onlinePinData = x.GetValue<string>("EncryptedData")
+                    });
+
+            int index = 2;
+
+            if (onlinePin.Count() > index)
             {
-                MSRTrackDataDecryptor decryptor = new MSRTrackDataDecryptor();
+                string onlinePinKsn = onlinePin.ElementAt(index).onlinePinKsn;
+                string onlinePinData = onlinePin.ElementAt(index).onlinePinData;
 
-                Console.WriteLine($"KSN      : {onlinePinKsn}");
-                Console.WriteLine($"DATA     : {onlinePinData}");
+                try
+                {
+                    MSRTrackDataDecryptor decryptor = new MSRTrackDataDecryptor();
 
-                // decryptor in action
-                byte[] trackInformation = decryptor.DecryptData(onlinePinKsn, onlinePinData);
+                    Console.WriteLine($"KSN      : {onlinePinKsn}");
+                    Console.WriteLine($"DATA     : {onlinePinData}");
 
-                string decryptedTrack = ConversionHelper.ByteArrayToHexString(trackInformation);
+                    // decryptor in action
+                    byte[] trackInformation = decryptor.DecryptData(onlinePinKsn, onlinePinData);
 
-                //1234567890|1234567890|12345
-                Console.WriteLine($"OUTPUT   : {decryptedTrack}");
-                Debug.WriteLine($"OUTPUT ____: {decryptedTrack}");
+                    string decryptedTrack = ConversionHelper.ByteArrayToHexString(trackInformation);
 
-                //MSRTrackData trackInfo = decryptor.RetrieveAdditionalData(trackInformation);
-                MSRTrackData trackInfo = decryptor.RetrieveTrackData(trackInformation);
+                    //1234567890|1234567890|12345
+                    Console.WriteLine($"OUTPUT   : {decryptedTrack}");
+                    Debug.WriteLine($"OUTPUT ____: {decryptedTrack}");
 
-                string expirationDate = trackInfo.ExpirationDate.Substring(0, 2) + "/" + trackInfo.ExpirationDate.Substring(2, 2);
+                    //MSRTrackData trackInfo = decryptor.RetrieveAdditionalData(trackInformation);
+                    MSRTrackData trackInfo = decryptor.RetrieveTrackData(trackInformation);
 
-                //1234567890|1234567890|12345
-                Debug.WriteLine($"PAN DATA     : {trackInfo.PANData}");
-                Debug.WriteLine($"EXPIR (YY/MM): {expirationDate}");
-                Debug.WriteLine($"SERVICE CODE : {trackInfo.ServiceCode}");
-                Debug.WriteLine($"DISCRETIONARY: {trackInfo.DiscretionaryData}");
+                    string expirationDate = "";
 
-                Console.WriteLine($"EXPIRATE : {trackInfo.ExpirationDate}");
-                Console.WriteLine($"SERV CODE: {trackInfo.ServiceCode}");
+                    if (trackInfo.ExpirationDate.Length >= 4)
+                        expirationDate = trackInfo.ExpirationDate.Substring(0, 2) + "/" + trackInfo.ExpirationDate.Substring(2, 2);
 
-                //byte[] expectedValue = ConversionHelper.HexToByteArray(item.DecryptedData);
-                //bool result = StructuralComparisons.StructuralEqualityComparer.Equals(expectedValue, trackInformation);
-                //Console.WriteLine($"EQUAL  : [{result}]");
+                    //1234567890|1234567890|12345
+                    Debug.WriteLine($"PAN DATA     : {trackInfo.PANData}");
+                    Debug.WriteLine($"EXPIR (YY/MM): {expirationDate}");
+                    Debug.WriteLine($"SERVICE CODE : {trackInfo.ServiceCode}");
+                    Debug.WriteLine($"DISCRETIONARY: {trackInfo.DiscretionaryData}");
 
-                //MSRTrackData trackData = decryptor.RetrieveTrackData(trackInformation);
-                //Console.WriteLine($"CHOLDER: [{trackData.Name}]");
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine($"EXCEPTION: {e.Message}");
+                    Console.WriteLine($"EXPIRATE : {trackInfo.ExpirationDate}");
+                    Console.WriteLine($"SERV CODE: {trackInfo.ServiceCode}");
+
+                    //byte[] expectedValue = ConversionHelper.HexToByteArray(item.DecryptedData);
+                    //bool result = StructuralComparisons.StructuralEqualityComparer.Equals(expectedValue, trackInformation);
+                    //Console.WriteLine($"EQUAL  : [{result}]");
+
+                    //MSRTrackData trackData = decryptor.RetrieveTrackData(trackInformation);
+                    //Console.WriteLine($"CHOLDER: [{trackData.Name}]");
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine($"EXCEPTION: {e.Message}");
+                }
             }
         }
 
@@ -125,7 +142,7 @@ namespace DecryptTrack1Data
 
                     // decryptor in action
                     byte[] trackInformation = decryptor.DecryptData(item.KSN, item.EncryptedData);
-                    
+
                     string decryptedTrack = ConversionHelper.ByteArrayToHexString(trackInformation);
 
                     //1234567890|1234567890|12345

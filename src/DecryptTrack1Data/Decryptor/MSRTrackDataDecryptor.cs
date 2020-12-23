@@ -15,7 +15,7 @@ namespace DecryptTrack1Data.Decryptor
     {
         const int RegisterSize = 16;
         const int CardholderNameSize = 26;
-        const int DecryptedTrackDataMinimumLength = 73;
+        const int DecryptedTrackDataMinimumLength = 48;
         const int MinimumCipherLength = 96;
 
         // BASE-DERIVATION KEY
@@ -536,7 +536,7 @@ namespace DecryptTrack1Data.Decryptor
             {
                 // clean up track data
                 string decryptedTrack = Regex.Replace(ConversionHelper.ByteArrayToAsciiString(trackInformation), @"[^\u0020-\u007E]", string.Empty, RegexOptions.Compiled);
-                //Debug.WriteLine($"DECRYPTED _: {decryptedTrack}");
+                Debug.WriteLine($"DECRYPTED _: {decryptedTrack}");
 
                 // expected format: PAN^NAME^ADDITIONAL-DATA^DISCRETIONARY-DATA
                 MatchCollection match = Regex.Matches(decryptedTrack, @"%B([0-9 ]{1,19})\^([^\^]{2,26})\^([0-9]{4}|\^)([0-9]{3}|\^)([^\?]+)\?", RegexOptions.Compiled);
