@@ -78,7 +78,8 @@ namespace DecryptTrack1Data
                         onlinePinData = x.GetValue<string>("EncryptedData")
                     });
 
-            int index = 2;
+            // set the target index
+            int index = 0;
 
             if (onlinePin.Count() > index)
             {
@@ -89,6 +90,7 @@ namespace DecryptTrack1Data
                 {
                     MSRTrackDataDecryptor decryptor = new MSRTrackDataDecryptor();
 
+                    Debug.WriteLine($"KSN      : {onlinePinKsn}");
                     Console.WriteLine($"KSN      : {onlinePinKsn}");
                     Console.WriteLine($"DATA     : {onlinePinData}");
 

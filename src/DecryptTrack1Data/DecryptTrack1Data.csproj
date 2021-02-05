@@ -22,6 +22,7 @@
 
   <ItemGroup>
     <Folder Include="Config\" />
+    <Folder Include="TLV\" />
   </ItemGroup>
 
   <ItemGroup>

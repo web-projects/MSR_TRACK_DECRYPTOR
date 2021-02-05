@@ -38,3 +38,4 @@ This an application for decrypting MSR TRACK Data.
 * 20201209 - Added appsettings.json
 * 20201215 - ANSI Magstripe fix
 * 20201222 - Added JSON array
+* 20210204 - TLV Processing

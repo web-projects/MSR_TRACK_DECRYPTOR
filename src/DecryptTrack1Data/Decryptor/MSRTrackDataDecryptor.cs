@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text.RegularExpressions;
 
@@ -15,7 +16,8 @@ namespace DecryptTrack1Data.Decryptor
     {
         const int RegisterSize = 16;
         const int CardholderNameSize = 26;
-        const int DecryptedTrackDataMinimumLength = 48;
+        //const int DecryptedTrackDataMinimumLength = 48;
+        const int DecryptedTrackDataMinimumLength = 30;
         const int MinimumCipherLength = 96;
 
         // BASE-DERIVATION KEY
@@ -590,6 +592,71 @@ namespace DecryptTrack1Data.Decryptor
                     // ADDITIONAL DATA
                     trackData.ExpirationDate = match[0].Groups[2].Value.Substring(0, 4);
                     trackData.ServiceCode = match[0].Groups[2].Value.Substring(4, 3);
+                }
+            }
+
+            return trackData;
+        }
+
+        /// <summary>
+        /// Track Data is provided in TLV with DFDB05 and DFDB06 TAGS 
+        /// </summary>
+        /// <param name="trackInformation"></param>
+        /// <returns></returns>
+        public MSRTrackData RetrieveSREDTrackData(byte[] trackInformation)
+        {
+            byte[] sREDMagStripTrack1 = new byte[] { 0xDF, 0xDB, 0x05 };
+            byte[] sREDMagStripTrack2 = new byte[] { 0xDF, 0xDB, 0x06 };
+
+            MSRTrackData trackData = new MSRTrackData()
+            {
+                PANData = string.Empty,
+                Name = string.Empty,
+                ExpirationDate = string.Empty,
+                DiscretionaryData = string.Empty
+            };
+
+            TLV.TLV tlv = new TLV.TLV();
+            List<TLV.TLV> tags = tlv.Decode(trackInformation, 0, trackInformation.Length, null);
+
+            string decryptedTrack1Data = "";
+            string decryptedTrack2Data = "";
+
+            foreach (var tag in tags)
+            {
+                if (tag.Tag.SequenceEqual(sREDMagStripTrack1))
+                {
+                    decryptedTrack1Data = ConversionHelper.ByteArrayCodedHextoString(tag.Data);
+                }
+                else if (tag.Tag.SequenceEqual(sREDMagStripTrack2))
+                {
+                    decryptedTrack2Data = ConversionHelper.ByteArrayCodedHextoString(tag.Data);
+                }
+            }
+
+            // clean up track data
+            Debug.WriteLine($"DECRYPTED _: {decryptedTrack1Data}");
+
+            // expected format: PAN^NAME^ADDITIONAL-DATA^DISCRETIONARY-DATA
+            MatchCollection match = Regex.Matches(decryptedTrack1Data, @"%B([0-9 ]{1,19})\^([^\^]{2,26})\^([0-9]{4}|\^)([0-9]{3}|\^)([^\?]+)\?", RegexOptions.Compiled);
+
+            // DISCRETIONARY DATA is optional
+            if (match.Count == 1 && match[0].Groups.Count >= 5)
+            {
+                // PAN DATA
+                trackData.PANData = match[0].Groups[1].Value;
+
+                // NAME
+                trackData.Name = match[0].Groups[2].Value;
+
+                // ADDITIONAL DATA
+                trackData.ExpirationDate = match[0].Groups[3].Value;
+                trackData.ServiceCode = match[0].Groups[4].Value;
+
+                // DISCRETIONARY DATA
+                if (match[0].Groups.Count > 5)
+                { 
+                    trackData.DiscretionaryData = match[0].Groups[5].Value;
                 }
             }
 
